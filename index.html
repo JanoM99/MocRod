@@ -920,15 +920,7 @@
       <!-- VIEW: EXPLORAR -->
       <div class="view" id="view-explorar">
         <h2 style="font-family:'Syne',sans-serif;margin-bottom:20px;font-size:1.25rem;">🔍 Explorar</h2>
-        <div style="position:relative;margin-bottom:20px;">
-          <input id="search-input" placeholder="Buscar usuarios o publicaciones..."
-            style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px 12px 40px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9375rem;outline:none;transition:border-color 0.2s;"
-            oninput="buscar(this.value)"
-            onfocus="this.style.borderColor='var(--accent)'"
-            onblur="this.style.borderColor='var(--border)'">
-          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;">🔍</span>
-        </div>
-        <div id="search-results"></div>
+        <p style="color:var(--muted);font-size:0.9375rem;">Próximamente: búsqueda de usuarios y tendencias globales.</p>
       </div>
 
       <!-- VIEW: PERFIL -->
@@ -1042,11 +1034,19 @@ let mediaActual = null; // { type: 'image'|'video', dataUrl }
 let vistaActual = 'inicio';
 
 // ══ DEMO DATA ══
-const demoUsers = [];
+const demoUsers = [
+  { correo:'luna@demo.com', nombre:'Luna Solis', usuario:'lunasolis', avatarUrl:null, avatarEmoji:'🦋', bio:'Diseñadora visual y amante del café ☕', seguidores:[], siguiendo:[] },
+  { correo:'alex@demo.com', nombre:'Alex Rivera', usuario:'alexriv',  avatarUrl:null, avatarEmoji:'🦁', bio:'Desarrollador full-stack 💻', seguidores:[], siguiendo:[] },
+  { correo:'kai@demo.com',  nombre:'Kai Storm',   usuario:'kaistorm', avatarUrl:null, avatarEmoji:'🐲', bio:'IA entusiast & maker 🤖', seguidores:[], siguiendo:[] },
+];
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 
-const demoPosts = [];
+const demoPosts = [
+  { id: uid(), usuario:'lunasolis', contenido:'El diseño es silencio hecho visible. 🎨 #Diseño', media: null, likes:[], comentarios:[], ts: Date.now()-300000 },
+  { id: uid(), usuario:'alexriv',   contenido:'Mocrod me tiene enganchado. La comunidad aquí es increíble 🔥 ¿Alguien más siente que esto va a ser enorme?', media: null, likes:[], comentarios:[], ts: Date.now()-600000 },
+  { id: uid(), usuario:'kaistorm',  contenido:'Trabajando en un proyecto nuevo. Pistas: involucra IA y mucho café ☕ #Tecnología', media: null, likes:[], comentarios:[], ts: Date.now()-900000 },
+];
 
 // ══ EMAIL VALIDATION ══
 function esCorreoValido(correo) {
@@ -1114,11 +1114,6 @@ function login() {
   }
 
   usuarioActual = u;
-  // Guardar sesión
-  localStorage.setItem('mocrod_session', JSON.stringify({
-    correo: u.correo, nombre: u.nombre, usuario: u.usuario,
-    avatarUrl: u.avatarUrl, avatarEmoji: u.avatarEmoji, bio: u.bio || ''
-  }));
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
@@ -1189,7 +1184,6 @@ function navegarA(vista) {
   const tab = document.getElementById('tab-' + vista);
   if (tab) tab.classList.add('active');
   if (vista === 'perfil') cargarProfileFeed();
-  if (vista === 'explorar') buscar('');
 }
 
 // ══ MEDIA IN COMPOSER ══
@@ -1293,106 +1287,6 @@ function initListeners() {
 
   var modalBgEl = document.getElementById('editModal');
   if (modalBgEl) modalBgEl.addEventListener('click', function(e) { if (e.target === modalBgEl) cerrarModalEditar(); });
-
-
-// ── BUSCAR ──
-function buscar(query) {
-  const results = document.getElementById('search-results');
-  if (!results) return;
-  const q = query.trim().toLowerCase();
-
-  if (!q) {
-    // Mostrar todos los usuarios cuando no hay búsqueda
-    results.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Usuarios</div>';
-    const usersDiv = document.createElement('div');
-    usuarios.filter(u => u.usuario !== usuarioActual.usuario).forEach(u => {
-      usersDiv.appendChild(crearUserCard(u));
-    });
-    results.appendChild(usersDiv);
-    return;
-  }
-
-  // Buscar en usuarios
-  const userMatches = usuarios.filter(u =>
-    u.usuario !== usuarioActual.usuario &&
-    (u.nombre.toLowerCase().includes(q) || u.usuario.toLowerCase().includes(q))
-  );
-
-  // Buscar en publicaciones
-  const postMatches = publicaciones.filter(p =>
-    p.contenido && p.contenido.toLowerCase().includes(q)
-  );
-
-  results.innerHTML = '';
-
-  if (userMatches.length === 0 && postMatches.length === 0) {
-    results.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">😕 Sin resultados para "' + escapeHTML(query) + '"</div>';
-    return;
-  }
-
-  if (userMatches.length > 0) {
-    const title = document.createElement('div');
-    title.style.cssText = 'color:var(--muted);font-size:0.85rem;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;';
-    title.textContent = 'Usuarios';
-    results.appendChild(title);
-    userMatches.forEach(u => results.appendChild(crearUserCard(u)));
-  }
-
-  if (postMatches.length > 0) {
-    const title2 = document.createElement('div');
-    title2.style.cssText = 'color:var(--muted);font-size:0.85rem;margin:16px 0 10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;';
-    title2.textContent = 'Publicaciones';
-    results.appendChild(title2);
-    postMatches.forEach(p => results.appendChild(crearPostCard(p)));
-  }
-}
-
-function crearUserCard(u) {
-  const div = document.createElement('div');
-  div.style.cssText = 'display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;';
-  const avHtml = u.avatarUrl
-    ? `<img src="${u.avatarUrl}" style="width:100%;height:100%;object-fit:cover;">`
-    : (u.avatarEmoji || '👤');
-  const isFollowing = (usuarioActual.siguiendo||[]).includes(u.usuario);
-  div.innerHTML = `
-    <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">${avHtml}</div>
-    <div style="flex:1;">
-      <div style="font-weight:600;font-size:0.9375rem;">${escapeHTML(u.nombre)}</div>
-      <div style="color:var(--muted);font-size:0.8rem;">@${escapeHTML(u.usuario)}</div>
-      ${u.bio ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">${escapeHTML(u.bio)}</div>` : ''}
-    </div>
-    <button class="btn-follow ${isFollowing?'following':''}" onclick="toggleFollow('${u.usuario}',this)">${isFollowing?'Siguiendo':'Seguir'}</button>`;
-  return div;
-}
-
-// ── Auto-login desde sesión guardada ──
-(function() {
-  var saved = localStorage.getItem('mocrod_session');
-  if (!saved) return;
-  try {
-    var u = JSON.parse(saved);
-    if (!u.correo || !u.usuario) return;
-    usuarios = JSON.parse(JSON.stringify(demoUsers));
-    publicaciones = JSON.parse(JSON.stringify(demoPosts));
-    var existing = usuarios.find(function(x) { return x.correo === u.correo; });
-    if (!existing) {
-      existing = { correo: u.correo, nombre: u.nombre, usuario: u.usuario, avatarUrl: u.avatarUrl, avatarEmoji: u.avatarEmoji || '👤', bio: u.bio || '', seguidores: [], siguiendo: [] };
-      usuarios.push(existing);
-    } else {
-      existing.avatarUrl = u.avatarUrl;
-      existing.avatarEmoji = u.avatarEmoji;
-      existing.bio = u.bio;
-    }
-    usuarioActual = existing;
-    document.getElementById('authScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    actualizarUIUsuario();
-    cargarSugerencias();
-    if (window.fbInit) window.fbInit(); else cargarFeed();
-  } catch(e) {
-    localStorage.removeItem('mocrod_session');
-  }
-})();
 
 window.addEventListener('load', initListeners);
 
@@ -1632,12 +1526,6 @@ function guardarPerfil() {
   usuarioActual.nombre = nombre;
   usuarioActual.usuario = usuario;
   usuarioActual.bio = bio;
-  localStorage.setItem('mocrod_session', JSON.stringify({
-    correo: usuarioActual.correo, nombre: usuarioActual.nombre,
-    usuario: usuarioActual.usuario, avatarUrl: usuarioActual.avatarUrl,
-    avatarEmoji: usuarioActual.avatarEmoji, bio: usuarioActual.bio || ''
-  }));
-  if (window.fbGuardarUsuario) window.fbGuardarUsuario(usuarioActual);
   actualizarUIUsuario();
   cargarFeed();
   cargarProfileFeed();
@@ -1792,58 +1680,9 @@ window.fbComentario = function(postId, comentario) {
   push(commRef, comentario);
 };
 
-// ── Guardar usuario en Firebase ──
-window.fbGuardarUsuario = function(u) {
-  const userRef = ref(db, 'usuarios/' + u.usuario);
-  set(userRef, {
-    nombre: u.nombre,
-    usuario: u.usuario,
-    correo: u.correo,
-    avatarEmoji: u.avatarEmoji || '👤',
-    avatarUrl: u.avatarUrl || null,
-    bio: u.bio || ''
-  });
-};
-
-// ── Escuchar usuarios en tiempo real ──
-function escucharUsuarios() {
-  const usuariosRef = ref(db, 'usuarios');
-  onValue(usuariosRef, (snapshot) => {
-    const data = snapshot.val();
-    if (!data) return;
-    const usersDeFirebase = Object.values(data);
-    // Mergear con usuarios locales sin pisar al usuario actual
-    usersDeFirebase.forEach(fu => {
-      if (fu.usuario === usuarioActual.usuario) return;
-      const existe = usuarios.find(x => x.usuario === fu.usuario);
-      if (!existe) {
-        usuarios.push({
-          correo: fu.correo || '',
-          nombre: fu.nombre,
-          usuario: fu.usuario,
-          avatarUrl: fu.avatarUrl || null,
-          avatarEmoji: fu.avatarEmoji || '👤',
-          bio: fu.bio || '',
-          seguidores: [],
-          siguiendo: []
-        });
-      } else {
-        existe.nombre = fu.nombre;
-        existe.avatarUrl = fu.avatarUrl || null;
-        existe.avatarEmoji = fu.avatarEmoji || '👤';
-        existe.bio = fu.bio || '';
-      }
-    });
-    cargarSugerencias();
-    if (vistaActual === 'explorar') buscar('');
-  });
-}
-
 // ── Iniciar escucha cuando el usuario hace login ──
 window.fbInit = function() {
   escucharPosts();
-  escucharUsuarios();
-  window.fbGuardarUsuario(usuarioActual);
 };
 </script>
 </body>

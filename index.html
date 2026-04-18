@@ -1114,6 +1114,11 @@ function login() {
   }
 
   usuarioActual = u;
+  // Guardar sesión
+  localStorage.setItem('mocrod_session', JSON.stringify({
+    correo: u.correo, nombre: u.nombre, usuario: u.usuario,
+    avatarUrl: u.avatarUrl, avatarEmoji: u.avatarEmoji, bio: u.bio || ''
+  }));
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
@@ -1287,6 +1292,35 @@ function initListeners() {
 
   var modalBgEl = document.getElementById('editModal');
   if (modalBgEl) modalBgEl.addEventListener('click', function(e) { if (e.target === modalBgEl) cerrarModalEditar(); });
+
+// ── Auto-login desde sesión guardada ──
+(function() {
+  var saved = localStorage.getItem('mocrod_session');
+  if (!saved) return;
+  try {
+    var u = JSON.parse(saved);
+    if (!u.correo || !u.usuario) return;
+    usuarios = JSON.parse(JSON.stringify(demoUsers));
+    publicaciones = JSON.parse(JSON.stringify(demoPosts));
+    var existing = usuarios.find(function(x) { return x.correo === u.correo; });
+    if (!existing) {
+      existing = { correo: u.correo, nombre: u.nombre, usuario: u.usuario, avatarUrl: u.avatarUrl, avatarEmoji: u.avatarEmoji || '👤', bio: u.bio || '', seguidores: [], siguiendo: [] };
+      usuarios.push(existing);
+    } else {
+      existing.avatarUrl = u.avatarUrl;
+      existing.avatarEmoji = u.avatarEmoji;
+      existing.bio = u.bio;
+    }
+    usuarioActual = existing;
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    actualizarUIUsuario();
+    cargarSugerencias();
+    if (window.fbInit) window.fbInit(); else cargarFeed();
+  } catch(e) {
+    localStorage.removeItem('mocrod_session');
+  }
+})();
 
 window.addEventListener('load', initListeners);
 
@@ -1526,6 +1560,11 @@ function guardarPerfil() {
   usuarioActual.nombre = nombre;
   usuarioActual.usuario = usuario;
   usuarioActual.bio = bio;
+  localStorage.setItem('mocrod_session', JSON.stringify({
+    correo: usuarioActual.correo, nombre: usuarioActual.nombre,
+    usuario: usuarioActual.usuario, avatarUrl: usuarioActual.avatarUrl,
+    avatarEmoji: usuarioActual.avatarEmoji, bio: usuarioActual.bio || ''
+  }));
   actualizarUIUsuario();
   cargarFeed();
   cargarProfileFeed();
